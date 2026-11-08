@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>POS - JAH503</title>
+    <title>POS-JAH503</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <!-- Librería para escanear códigos de barras -->
@@ -31,8 +31,8 @@
             <div class="flex flex-col gap-6">
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 text-center">
                     <h2 class="text-lg font-semibold mb-3">📷 Lector de Códigos</h2>
-                    <p class="text-xs text-slate-500 mb-4">Usa la cámara de tu dispositivo para escanear productos.</p>
-                    <button onclick="iniciarEscaner()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold transition shadow-md">
+                    <p class="text-xs text-slate-500 mb-4">Usa la cámara de tu dispositivo para escanear productos rápidamente.</p>
+                    <button onclick="iniciarEscaner()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold transition shadow-md cursor-pointer">
                         Iniciar Cámara para Escanear
                     </button>
                 </div>
@@ -48,7 +48,7 @@
                 <div>
                     <h2 class="text-lg font-semibold mb-4 border-b pb-2 flex justify-between items-center">
                         <span>🛒 Carrito de Venta</span>
-                        <button id="btn-vaciar" class="text-xs text-red-500 hover:text-red-700 font-medium">Vaciar</button>
+                        <button id="btn-vaciar" class="text-xs text-red-500 hover:text-red-700 font-medium cursor-pointer">Vaciar</button>
                     </h2>
                     
                     <div id="lista-carrito" class="space-y-3 max-h-[350px] overflow-y-auto pr-1">
@@ -65,7 +65,7 @@
                         <span>Total a Pagar</span>
                         <span id="txt-total">$0.00</span>
                     </div>
-                    <button id="btn-cobrar" class="w-full bg-slate-900 hover:bg-slate-800 text-white py-3 rounded-xl font-semibold transition shadow-md">
+                    <button id="btn-cobrar" class="w-full bg-slate-900 hover:bg-slate-800 text-white py-3 rounded-xl font-semibold transition shadow-md cursor-pointer">
                         Completar Venta
                     </button>
                 </div>
@@ -75,45 +75,50 @@
         <!-- SECCIÓN 2: INVENTARIO -->
         <div id="section-inventario" class="tab-content hidden">
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <div class="p-4 border-b bg-slate-50 flex flex-wrap justify-between items-center gap-2">
-    <h2 class="font-semibold text-slate-800">Gestión de Inventario</h2>
-    <div class="flex gap-2">
-        <button onclick="exportarInventario()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-2 rounded-lg font-semibold transition shadow-sm">
-            💾 Exportar Copia
-        </button>
-        <label class="bg-purple-600 hover:bg-purple-700 text-white text-xs px-3 py-2 rounded-lg font-semibold transition shadow-sm cursor-pointer">
-            📁 Importar Copia
-            <input type="file" id="input-archivo-backup" accept=".json" onchange="importarInventario(event)" class="hidden">
-        </label>
-        <button onclick="abrirModalProducto()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-2 rounded-lg font-semibold transition shadow-sm">
-            + Agregar Producto
-        </button>
-    </div>
-</div>
+                <div class="p-4 border-b bg-slate-50 flex flex-wrap justify-between items-center gap-2">
+                    <h2 class="font-semibold text-slate-800">Gestión de Inventario</h2>
+                    <div class="flex gap-2">
+                        <button onclick="exportarInventario()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-2 rounded-lg font-semibold transition shadow-sm cursor-pointer">
+                            💾 Exportar Copia
+                        </button>
+                        <label class="bg-purple-600 hover:bg-purple-700 text-white text-xs px-3 py-2 rounded-lg font-semibold transition shadow-sm cursor-pointer">
+                            📁 Importar Copia
+                            <input type="file" id="input-archivo-backup" accept=".json" onchange="importarInventario(event)" class="hidden">
+                        </label>
+                        <button onclick="abrirModalProducto()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-2 rounded-lg font-semibold transition shadow-sm cursor-pointer">
+                            + Agregar Producto
+                        </button>
+                    </div>
+                </div>
+                <div id="tabla-inventario" class="divide-y divide-slate-100">
+                    <!-- Dinámico por JS -->
+                </div>
+            </div>
+        </div>
 
     </main>
 
-    <!-- MODAL PARA NUEVO PRODUCTO -->
+    <!-- MODAL PARA NUEVO / EDITAR PRODUCTO -->
     <div id="modal-producto" class="hidden fixed inset-0 bg-slate-900/80 z-50 flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-md rounded-2xl overflow-hidden shadow-2xl p-6">
             <div class="flex justify-between items-center mb-4 border-b pb-2">
-                <h3 class="font-bold text-slate-800">Registrar Nuevo Producto</h3>
-                <button onclick="cerrarModalProducto()" class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+                <h3 id="titulo-modal-producto" class="font-bold text-slate-800">Registrar Nuevo Producto</h3>
+                <button onclick="cerrarModalProducto()" class="text-slate-400 hover:text-slate-600 font-bold px-2 py-1 cursor-pointer">✕</button>
             </div>
             <form id="form-nuevo-producto" class="space-y-4">
                 <div>
                     <label class="block text-xs font-medium text-slate-600 mb-1">Nombre del Producto</label>
                     <input type="text" id="input-nombre" required placeholder="Ej. Copia a Color" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
                 </div>
-              <div>
-    <label class="block text-xs font-medium text-slate-600 mb-1">Código de Barras</label>
-    <div class="flex gap-2">
-        <input type="text" id="input-codigo" required placeholder="Ej. 7501001300010" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
-        <button type="button" onclick="iniciarEscanerParaInventario()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm transition flex items-center gap-1 shadow-sm whitespace-nowrap" title="Escanear con cámara">
-            📷 Leer
-        </button>
-    </div>
-</div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Código de Barras</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="input-codigo" required placeholder="Ej. 7501001300010" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
+                        <button type="button" onclick="iniciarEscanerParaInventario()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm transition font-medium cursor-pointer shrink-0">
+                            📷 Leer
+                        </button>
+                    </div>
+                </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-medium text-slate-600 mb-1">Precio ($)</label>
@@ -121,12 +126,12 @@
                     </div>
                     <div>
                         <label class="block text-xs font-medium text-slate-600 mb-1">Stock Inicial</label>
-                        <input type="number" id="input-stock" required placeholder="100" class="w-full cp-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
+                        <input type="number" id="input-stock" required placeholder="100" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
                     </div>
                 </div>
                 <div class="pt-2 flex gap-2">
-                    <button type="button" onclick="cerrarModalProducto()" class="w-1/2 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-lg text-sm font-semibold transition">Cancelar</button>
-                    <button type="submit" class="w-1/2 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg text-sm font-semibold transition shadow-md">Guardar</button>
+                    <button type="button" onclick="cerrarModalProducto()" class="w-1/2 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-lg text-sm font-semibold transition cursor-pointer">Cancelar</button>
+                    <button type="submit" class="w-1/2 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg text-sm font-semibold transition shadow-md cursor-pointer">Guardar</button>
                 </div>
             </form>
         </div>
@@ -137,15 +142,13 @@
         <div class="bg-white w-full max-w-md rounded-2xl overflow-hidden shadow-2xl p-4 flex flex-col items-center">
             <div class="flex justify-between w-full items-center mb-2">
                 <h3 class="font-bold text-slate-800">Escaneando código...</h3>
-                <button onclick="cerrarEscaner()" class="text-slate-400 hover:text-slate-600 font-bold px-2 py-1">✕ Cerrar</button>
+                <button onclick="cerrarEscaner()" class="text-slate-400 hover:text-slate-600 font-bold px-2 py-1 cursor-pointer">✕ Cerrar</button>
             </div>
             <div id="reader-container" class="w-full rounded-lg overflow-hidden bg-black min-h-[250px]"></div>
-            <button onclick="cambiarCamara()" class="mt-4 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 px-4 rounded-lg font-medium transition">
-                🔄 Cambiar Cámara
-            </button>
         </div>
     </div>
 
+    <!-- Script Principal -->
     <script src="App.js"></script>
 </body>
 </html>
