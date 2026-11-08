@@ -7,8 +7,6 @@ let inventario = JSON.parse(localStorage.getItem('pos_inventario')) || [
 
 let carrito = [];
 let html5QrCode = null;
-let camarasDisponibles = [];
-let indiceCamaraActual = 0;
 let modoEscannerInventario = false; // False = Vender en caja, True = Leer código para nuevo producto
 let idProductoEditando = null; // Controla si estamos editando un producto existente
 
@@ -135,11 +133,13 @@ window.editarProducto = function(id) {
     document.getElementById('input-codigo').value = prod.codigo;
     document.getElementById('input-precio').value = prod.precio;
     document.getElementById('input-stock').value = prod.stock;
-
+    document.getElementById('busqueda-input').value = '';
+    document.getElementById('sugerencias-busqueda').innerHTML = '';
+    
     document.getElementById('modal-producto').classList.remove('hidden');
 }
 
-// --- ESCÁNER DE CÁMARA ---
+// --- ESCÁNER DE CÁMARA ROBUSTO ---
 window.iniciarEscaner = function() {
     modoEscannerInventario = false;
     abrirModalEscanerVisual();
@@ -154,55 +154,36 @@ function abrirModalEscanerVisual() {
     const contenedorModal = document.getElementById('modal-escaner');
     contenedorModal.classList.remove('hidden');
 
-    Html5Qrcode.getCameras().then(cameras => {
-        if (cameras && cameras.length > 0) {
-            const trasera = cameras.find(c => c.label.toLowerCase().includes('back') || c.label.toLowerCase().includes('trasera') || c.label.toLowerCase().includes('environment'));
-            indiceCamaraActual = trasera ? cameras.indexOf(trasera) : cameras.length - 1;
-            camarasDisponibles = cameras;
-            arrancarInstanciaCamara(camarasDisponibles[indiceCamaraActual].id);
+    setTimeout(() => {
+        if (html5QrCode) {
+            html5QrCode.stop().catch(() => {}).then(() => iniciarInstanciaLector());
         } else {
-            alert('No se encontraron cámaras disponibles.');
-            cerrarEscaner();
+            iniciarInstanciaLector();
         }
-    }).catch(err => {
-        console.error("Error al obtener cámaras:", err);
-        alert('No se pudo acceder a la cámara. Revisa permisos.');
-        cerrarEscaner();
-    });
+    }, 200);
 }
 
-function arrancarInstanciaCamara(cameraId) {
-    if (html5QrCode) {
-        html5QrCode.stop().catch(() => {}).then(() => ejecutarLector(cameraId));
-    } else {
-        ejecutarLector(cameraId);
-    }
-}
-
-function ejecutarLector(cameraId) {
+function iniciarInstanciaLector() {
     html5QrCode = new Html5Qrcode("reader-container");
-    const config = { fps: 15, qrbox: { width: 250, height: 150 } };
+    const config = { fps: 10, qrbox: { width: 250, height: 150 } };
 
     html5QrCode.start(
-        cameraId, 
+        { facingMode: "environment" }, 
         config, 
         (decodedText) => {
             manejarCodigoDetectado(decodedText);
-            cerrarEscaner();
+            detenerEscaner();
         },
         () => {}
-    ).catch(err => console.error("Error al iniciar lector:", err));
-}
-
-window.cambiarCamara = function() {
-    if (camarasDisponibles.length < 2) return;
-    indiceCamaraActual = (indiceCamaraActual + 1) % camarasDisponibles.length;
-    arrancarInstanciaCamara(camarasDisponibles[indiceCamaraActual].id);
+    ).catch(err => {
+        console.error("Error al iniciar cámara:", err);
+        alert('No se pudo acceder a la cámara. Revisa los permisos.');
+        detenerEscaner();
+    });
 }
 
 window.cerrarEscaner = function() {
     detenerEscaner();
-    document.getElementById('modal-escaner').classList.add('hidden');
 }
 
 function detenerEscaner() {
@@ -210,25 +191,28 @@ function detenerEscaner() {
         html5QrCode.stop().then(() => {
             html5QrCode.clear();
             html5QrCode = null;
-        }).catch(err => {});
+        }).catch(() => {});
     }
+    const contenedorModal = document.getElementById('modal-escaner');
+    if (contenedorModal) contenedorModal.classList.add('hidden');
 }
 
 function manejarCodigoDetectado(codigo) {
+    const cleanCode = codigo.trim();
     if (modoEscannerInventario) {
         const inputCodigo = document.getElementById('input-codigo');
         if (inputCodigo) {
-            inputCodigo.value = codigo;
+            inputCodigo.value = cleanCode;
         }
         modoEscannerInventario = false;
     } else {
-        const producto = inventario.find(p => p.codigo === codigo);
+        const producto = inventario.find(p => p.codigo.toLowerCase() === cleanCode.toLowerCase());
         if (producto) {
             agregarAlCarrito(producto);
         } else {
-            if (confirm(`El código ${codigo} no está registrado. ¿Deseas agregarlo ahora?`)) {
+            if (confirm(`El código "${cleanCode}" no está registrado. ¿Deseas agregarlo ahora?`)) {
                 abrirModalProducto();
-                document.getElementById('input-codigo').value = codigo;
+                document.getElementById('input-codigo').value = cleanCode;
             }
         }
     }
