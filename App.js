@@ -1,8 +1,8 @@
 // Base de datos inicial en LocalStorage para Arte e impresiones
 let inventario = JSON.parse(localStorage.getItem('pos_inventario')) || [
-    { id: '1', codigo: '7501001300010', nombre: 'Impresión B/N Carta', precio: 0.15, stock: 500, descripcion: 'Impresión láser blanco y negro' },
-    { id: '2', codigo: '7501001300020', nombre: 'Impresión a Color Carta', precio: 0.50, stock: 200, descripcion: 'Impresión a color alta calidad' },
-    { id: '3', codigo: '7501001300030', nombre: 'Anillado Metálico', precio: 1.50, stock: 50, descripcion: 'Encuadernación con espiral metálico' }
+    { id: '1', codigo: '7501001300010', nombre: 'Impresión B/N Carta', precio: 0.15, stock: 500 },
+    { id: '2', codigo: '7501001300020', nombre: 'Impresión a Color Carta', precio: 0.50, stock: 200 },
+    { id: '3', codigo: '7501001300030', nombre: 'Anillado Metálico', precio: 1.50, stock: 50 }
 ];
 
 let carrito = [];
@@ -10,12 +10,10 @@ let html5QrCode = null;
 let camarasDisponibles = [];
 let indiceCamaraActual = 0;
 
-// Guardar inventario por defecto si está vacío
 if (!localStorage.getItem('pos_inventario')) {
     localStorage.setItem('pos_inventario', JSON.stringify(inventario));
 }
 
-// Inicializar la aplicación al cargar la página
 document.addEventListener('DOMContentLoaded', () => {
     actualizarVistaCarrito();
     renderizarInventario();
@@ -23,7 +21,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function configurarEventos() {
-    // Pestañas de navegación
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const tab = e.currentTarget.dataset.tab;
@@ -31,17 +28,14 @@ function configurarEventos() {
         });
     });
 
-    // Vaciar carrito
     document.getElementById('btn-vaciar').addEventListener('click', () => {
         carrito = [];
         actualizarVistaCarrito();
     });
 
-    // Cobrar venta
     document.getElementById('btn-cobrar').addEventListener('click', () => {
         if (carrito.length === 0) return alert('El carrito está vacío');
         
-        // Descontar stock local
         carrito.forEach(item => {
             const prod = inventario.find(p => p.id === item.id);
             if (prod) prod.stock -= item.quantity;
@@ -54,11 +48,39 @@ function configurarEventos() {
         renderizarInventario();
     });
 
-    // Búsqueda manual en caja
     document.getElementById('busqueda-input').addEventListener('input', (e) => {
         const query = e.target.value.toLowerCase();
         const resultados = inventario.filter(p => p.nombre.toLowerCase().includes(query) || p.codigo.includes(query));
         mostrarSugerenciasBusqueda(resultados);
+    });
+
+    // Guardar nuevo producto desde el formulario
+    document.getElementById('form-nuevo-producto').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const nombre = document.getElementById('input-nombre').value.trim();
+        const codigo = document.getElementById('input-codigo').value.trim();
+        const precio = parseFloat(document.getElementById('input-precio').value);
+        const stock = parseInt(document.getElementById('input-stock').value);
+
+        if (!nombre || !codigo || isNaN(precio) || isNaN(stock)) {
+            alert('Por favor completa todos los campos correctamente.');
+            return;
+        }
+
+        const nuevoProducto = {
+            id: Date.now().toString(),
+            codigo,
+            nombre,
+            precio,
+            stock
+        };
+
+        inventario.push(nuevoProducto);
+        localStorage.setItem('pos_inventario', JSON.stringify(inventario));
+        renderizarInventario();
+        cerrarModalProducto();
+        e.target.reset();
+        alert('¡Producto agregado al inventario con éxito!');
     });
 }
 
@@ -74,11 +96,19 @@ function cambiarPestaña(tab) {
     activoBtn.classList.remove('border-transparent', 'text-slate-600');
     activoBtn.classList.add('border-blue-600', 'text-blue-600', 'bg-blue-50/50');
 
-    // Detener escáner si cambia de pestaña
     detenerEscaner();
 }
 
-// --- LÓGICA DEL ESCÁNER DE CÁMARA ---
+// --- MODAL DE NUEVO PRODUCTO ---
+window.abrirModalProducto = function() {
+    document.getElementById('modal-producto').classList.remove('hidden');
+}
+
+window.cerrarModalProducto = function() {
+    document.getElementById('modal-producto').classList.add('hidden');
+}
+
+// --- ESCÁNER DE CÁMARA ---
 async function iniciarEscaner() {
     const contenedorModal = document.getElementById('modal-escaner');
     contenedorModal.classList.remove('hidden');
@@ -86,7 +116,6 @@ async function iniciarEscaner() {
     try {
         camarasDisponibles = await Html5Qrcode.getCameras();
         if (camarasDisponibles && camarasDisponibles.length > 0) {
-            // Preferir cámara trasera
             const trasera = camarasDisponibles.find(c => c.label.toLowerCase().includes('back') || c.label.toLowerCase().includes('trasera'));
             indiceCamaraActual = trasera ? camarasDisponibles.indexOf(trasera) : camarasDisponibles.length - 1;
             arrancarInstanciaCamara(camarasDisponibles[indiceCamaraActual].id);
@@ -96,7 +125,7 @@ async function iniciarEscaner() {
         }
     } catch (err) {
         console.error("Error al obtener cámaras:", err);
-        alert('No se pudo acceder a la cámara. Revisa los permisos.');
+        alert('No se pudo acceder a la cámara.');
         cerrarEscaner();
     }
 }
@@ -120,19 +149,17 @@ function ejecutarLector(cameraId) {
             manejarCodigoDetectado(decodedText);
             cerrarEscaner();
         },
-        () => {} // Ignorar errores de fotogramas vacíos
-    ).catch(err => {
-        console.error("Error al iniciar lector QR:", err);
-    });
+        () => {}
+    ).catch(err => console.error("Error al iniciar lector QR:", err));
 }
 
-function cambiarCamara() {
+window.cambiarCamara = function() {
     if (camarasDisponibles.length < 2) return;
     indiceCamaraActual = (indiceCamaraActual + 1) % camarasDisponibles.length;
     arrancarInstanciaCamara(camarasDisponibles[indiceCamaraActual].id);
 }
 
-function cerrarEscaner() {
+window.cerrarEscaner = function() {
     detenerEscaner();
     document.getElementById('modal-escaner').classList.add('hidden');
 }
@@ -151,11 +178,14 @@ function manejarCodigoDetectado(codigo) {
     if (producto) {
         agregarAlCarrito(producto);
     } else {
-        alert(`Código no registrado: ${codigo}`);
+        if (confirm(`El código ${codigo} no está registrado. ¿Deseas agregarlo ahora?`)) {
+            abrirModalProducto();
+            document.getElementById('input-codigo').value = codigo;
+        }
     }
 }
 
-// --- CARRITO DE COMPRAS ---
+// --- CARRITO ---
 function agregarAlCarrito(producto) {
     const item = carrito.find(i => i.id === producto.id);
     if (item) {
@@ -211,7 +241,6 @@ window.eliminarItemCarrito = function(index) {
 };
 
 function mostrarSugerenciasBusqueda(resultados) {
-    // Opcional para mostrar resultados rápidos debajo del input de búsqueda
     const contenedor = document.getElementById('sugerencias-busqueda');
     if (!contenedor) return;
     
@@ -238,7 +267,7 @@ window.agregarAlCarritoPorId = function(id) {
     document.getElementById('sugerencias-busqueda').innerHTML = '';
 };
 
-// --- GESTIÓN DE INVENTARIO ---
+// --- INVENTARIO ---
 function renderizarInventario() {
     const contenedor = document.getElementById('tabla-inventario');
     if (!contenedor) return;
@@ -251,12 +280,23 @@ function renderizarInventario() {
                     <h4 class="font-semibold text-slate-800">${p.nombre}</h4>
                     <p class="text-xs text-slate-500 font-mono">Código: ${p.codigo}</p>
                 </div>
-                <div class="text-right">
-                    <span class="font-bold text-slate-900">$${p.precio.toFixed(2)}</span>
-                    <p class="text-xs text-slate-400">Stock: ${p.stock}</p>
+                <div class="flex items-center gap-4">
+                    <div class="text-right">
+                        <span class="font-bold text-slate-900">$${p.precio.toFixed(2)}</span>
+                        <p class="text-xs text-slate-400">Stock: ${p.stock}</p>
+                    </div>
+                    <button onclick="eliminarProducto('${p.id}')" class="text-red-400 hover:text-red-600 text-xs px-2 py-1 border border-red-200 rounded">Eliminar</button>
                 </div>
             </div>
         `;
     });
     contenedor.innerHTML = html;
+}
+
+window.eliminarProducto = function(id) {
+    if (confirm('¿Estás seguro de eliminar este producto del inventario?')) {
+        inventario = inventario.filter(p => p.id !== id);
+        localStorage.setItem('pos_inventario', JSON.stringify(inventario));
+        renderizarInventario();
+    }
 }
