@@ -9,7 +9,7 @@ let carrito = [];
 let html5QrCode = null;
 let camarasDisponibles = [];
 let indiceCamaraActual = 0;
-let modoEscannerInventario = false; // Controla si el escáner es para vender o para registrar código
+let modoEscannerInventario = false; // False = Vender en caja, True = Leer código para nuevo producto
 let idProductoEditando = null; // Controla si estamos editando un producto existente
 
 if (!localStorage.getItem('pos_inventario')) {
@@ -70,7 +70,6 @@ function configurarEventos() {
         }
 
         if (idProductoEditando) {
-            // Actualizar producto existente
             const prod = inventario.find(p => p.id === idProductoEditando);
             if (prod) {
                 prod.nombre = nombre;
@@ -80,7 +79,6 @@ function configurarEventos() {
             }
             idProductoEditando = null;
         } else {
-            // Crear nuevo producto
             const nuevoProducto = {
                 id: Date.now().toString(),
                 codigo,
@@ -142,12 +140,12 @@ window.editarProducto = function(id) {
 }
 
 // --- ESCÁNER DE CÁMARA ---
-function iniciarEscaner() {
+window.iniciarEscaner = function() {
     modoEscannerInventario = false;
     abrirModalEscanerVisual();
 }
 
-function iniciarEscanerParaInventario() {
+window.iniciarEscanerParaInventario = function() {
     modoEscannerInventario = true;
     abrirModalEscanerVisual();
 }
@@ -158,7 +156,7 @@ function abrirModalEscanerVisual() {
 
     Html5Qrcode.getCameras().then(cameras => {
         if (cameras && cameras.length > 0) {
-            const trasera = cameras.find(c => c.label.toLowerCase().includes('back') || c.label.toLowerCase().includes('trasera'));
+            const trasera = cameras.find(c => c.label.toLowerCase().includes('back') || c.label.toLowerCase().includes('trasera') || c.label.toLowerCase().includes('environment'));
             indiceCamaraActual = trasera ? cameras.indexOf(trasera) : cameras.length - 1;
             camarasDisponibles = cameras;
             arrancarInstanciaCamara(camarasDisponibles[indiceCamaraActual].id);
@@ -168,7 +166,7 @@ function abrirModalEscanerVisual() {
         }
     }).catch(err => {
         console.error("Error al obtener cámaras:", err);
-        alert('No se pudo acceder a la cámara.');
+        alert('No se pudo acceder a la cámara. Revisa permisos.');
         cerrarEscaner();
     });
 }
@@ -193,7 +191,7 @@ function ejecutarLector(cameraId) {
             cerrarEscaner();
         },
         () => {}
-    ).catch(err => console.error("Error al iniciar lector QR:", err));
+    ).catch(err => console.error("Error al iniciar lector:", err));
 }
 
 window.cambiarCamara = function() {
@@ -212,7 +210,7 @@ function detenerEscaner() {
         html5QrCode.stop().then(() => {
             html5QrCode.clear();
             html5QrCode = null;
-        }).catch(err => console.error(err));
+        }).catch(err => {});
     }
 }
 
@@ -252,10 +250,12 @@ function actualizarVistaCarrito() {
     const txtSubtotal = document.getElementById('txt-subtotal');
     const txtTotal = document.getElementById('txt-total');
 
+    if (!lista) return;
+
     if (carrito.length === 0) {
         lista.innerHTML = `<p class="text-slate-400 text-center py-10 text-sm">El carrito está vacío</p>`;
-        txtSubtotal.textContent = '$0.00';
-        txtTotal.textContent = '$0.00';
+        if (txtSubtotal) txtSubtotal.textContent = '$0.00';
+        if (txtTotal) txtTotal.textContent = '$0.00';
         return;
     }
 
@@ -282,8 +282,8 @@ function actualizarVistaCarrito() {
     });
 
     lista.innerHTML = html;
-    txtSubtotal.textContent = `$${subtotal.toFixed(2)}`;
-    txtTotal.textContent = `$${subtotal.toFixed(2)}`;
+    if (txtSubtotal) txtSubtotal.textContent = `$${subtotal.toFixed(2)}`;
+    if (txtTotal) txtTotal.textContent = `$${subtotal.toFixed(2)}`;
 }
 
 window.eliminarItemCarrito = function(index) {
