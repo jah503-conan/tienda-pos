@@ -1,4 +1,4 @@
-// Base de datos inicial en LocalStorage para Arte e impresiones
+// Base de datos inicial en LocalStorage para JEHOVA JIREH
 let inventario = JSON.parse(localStorage.getItem('pos_inventario')) || [
     { id: '1', codigo: '7501001300010', nombre: 'Impresión B/N Carta', precio: 0.15, stock: 500 },
     { id: '2', codigo: '7501001300020', nombre: 'Impresión a Color Carta', precio: 0.50, stock: 200 },
@@ -9,6 +9,7 @@ let carrito = [];
 let html5QrCode = null;
 let camarasDisponibles = [];
 let indiceCamaraActual = 0;
+let modoEscannerInventario = false; // Controla si el escáner es para vender o para registrar código
 
 if (!localStorage.getItem('pos_inventario')) {
     localStorage.setItem('pos_inventario', JSON.stringify(inventario));
@@ -109,25 +110,35 @@ window.cerrarModalProducto = function() {
 }
 
 // --- ESCÁNER DE CÁMARA ---
-async function iniciarEscaner() {
+function iniciarEscaner() {
+    modoEscannerInventario = false;
+    abrirModalEscanerVisual();
+}
+
+function iniciarEscanerParaInventario() {
+    modoEscannerInventario = true;
+    abrirModalEscanerVisual();
+}
+
+function abrirModalEscanerVisual() {
     const contenedorModal = document.getElementById('modal-escaner');
     contenedorModal.classList.remove('hidden');
 
-    try {
-        camarasDisponibles = await Html5Qrcode.getCameras();
-        if (camarasDisponibles && camarasDisponibles.length > 0) {
-            const trasera = camarasDisponibles.find(c => c.label.toLowerCase().includes('back') || c.label.toLowerCase().includes('trasera'));
-            indiceCamaraActual = trasera ? camarasDisponibles.indexOf(trasera) : camarasDisponibles.length - 1;
+    Html5Qrcode.getCameras().then(cameras => {
+        if (cameras && cameras.length > 0) {
+            const trasera = cameras.find(c => c.label.toLowerCase().includes('back') || c.label.toLowerCase().includes('trasera'));
+            indiceCamaraActual = trasera ? cameras.indexOf(trasera) : cameras.length - 1;
+            camarasDisponibles = cameras;
             arrancarInstanciaCamara(camarasDisponibles[indiceCamaraActual].id);
         } else {
             alert('No se encontraron cámaras disponibles.');
             cerrarEscaner();
         }
-    } catch (err) {
+    }).catch(err => {
         console.error("Error al obtener cámaras:", err);
         alert('No se pudo acceder a la cámara.');
         cerrarEscaner();
-    }
+    });
 }
 
 function arrancarInstanciaCamara(cameraId) {
@@ -174,13 +185,21 @@ function detenerEscaner() {
 }
 
 function manejarCodigoDetectado(codigo) {
-    const producto = inventario.find(p => p.codigo === codigo);
-    if (producto) {
-        agregarAlCarrito(producto);
+    if (modoEscannerInventario) {
+        const inputCodigo = document.getElementById('input-codigo');
+        if (inputCodigo) {
+            inputCodigo.value = codigo;
+        }
+        modoEscannerInventario = false;
     } else {
-        if (confirm(`El código ${codigo} no está registrado. ¿Deseas agregarlo ahora?`)) {
-            abrirModalProducto();
-            document.getElementById('input-codigo').value = codigo;
+        const producto = inventario.find(p => p.codigo === codigo);
+        if (producto) {
+            agregarAlCarrito(producto);
+        } else {
+            if (confirm(`El código ${codigo} no está registrado. ¿Deseas agregarlo ahora?`)) {
+                abrirModalProducto();
+                document.getElementById('input-codigo').value = codigo;
+            }
         }
     }
 }
@@ -300,20 +319,18 @@ window.eliminarProducto = function(id) {
         renderizarInventario();
     }
 }
-// --- COPIA DE SEGURIDAD (EXPORTAR E IMPORTAR) ---
 
-// Descargar archivo JSON con el inventario actual
+// --- COPIA DE SEGURIDAD (EXPORTAR E IMPORTAR) ---
 window.exportarInventario = function() {
     const datosStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(inventario, null, 2));
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute("href", datosStr);
-    downloadAnchor.setAttribute("download", `inventario_arte_e_impresiones_${new Date().toISOString().slice(0,10)}.json`);
+    downloadAnchor.setAttribute("download", `inventario_jehova_jireh_${new Date().toISOString().slice(0,10)}.json`);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
 }
 
-// Cargar inventario desde el archivo JSON guardado
 window.importarInventario = function(event) {
     const archivo = event.target.files[0];
     if (!archivo) return;
