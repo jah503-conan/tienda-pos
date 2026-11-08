@@ -75,17 +75,21 @@
         <!-- SECCIÓN 2: INVENTARIO -->
         <div id="section-inventario" class="tab-content hidden">
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                <div class="p-4 border-b bg-slate-50 flex justify-between items-center">
-                    <h2 class="font-semibold text-slate-800">Gestión de Inventario</h2>
-                    <button onclick="abrirModalProducto()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-2 rounded-lg font-semibold transition shadow-sm">
-                        + Agregar Producto
-                    </button>
-                </div>
-                <div id="tabla-inventario" class="divide-y divide-slate-100">
-                    <!-- Productos renderizados por JS -->
-                </div>
-            </div>
-        </div>
+            <div class="p-4 border-b bg-slate-50 flex flex-wrap justify-between items-center gap-2">
+    <h2 class="font-semibold text-slate-800">Gestión de Inventario</h2>
+    <div class="flex gap-2">
+        <button onclick="exportarInventario()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-2 rounded-lg font-semibold transition shadow-sm">
+            💾 Exportar Copia
+        </button>
+        <label class="bg-purple-600 hover:bg-purple-700 text-white text-xs px-3 py-2 rounded-lg font-semibold transition shadow-sm cursor-pointer">
+            📁 Importar Copia
+            <input type="file" id="input-archivo-backup" accept=".json" onchange="importarInventario(event)" class="hidden">
+        </label>
+        <button onclick="abrirModalProducto()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-2 rounded-lg font-semibold transition shadow-sm">
+            + Agregar Producto
+        </button>
+    </div>
+</div>
 
     </main>
 
