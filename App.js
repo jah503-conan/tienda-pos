@@ -10,6 +10,7 @@ let html5QrCode = null;
 let camarasDisponibles = [];
 let indiceCamaraActual = 0;
 let modoEscannerInventario = false; // Controla si el escáner es para vender o para registrar código
+let idProductoEditando = null; // Controla si estamos editando un producto existente
 
 if (!localStorage.getItem('pos_inventario')) {
     localStorage.setItem('pos_inventario', JSON.stringify(inventario));
@@ -55,7 +56,7 @@ function configurarEventos() {
         mostrarSugerenciasBusqueda(resultados);
     });
 
-    // Guardar nuevo producto desde el formulario
+    // Guardar o actualizar producto desde el formulario
     document.getElementById('form-nuevo-producto').addEventListener('submit', (e) => {
         e.preventDefault();
         const nombre = document.getElementById('input-nombre').value.trim();
@@ -68,20 +69,33 @@ function configurarEventos() {
             return;
         }
 
-        const nuevoProducto = {
-            id: Date.now().toString(),
-            codigo,
-            nombre,
-            precio,
-            stock
-        };
+        if (idProductoEditando) {
+            // Actualizar producto existente
+            const prod = inventario.find(p => p.id === idProductoEditando);
+            if (prod) {
+                prod.nombre = nombre;
+                prod.codigo = codigo;
+                prod.precio = precio;
+                prod.stock = stock;
+            }
+            idProductoEditando = null;
+        } else {
+            // Crear nuevo producto
+            const nuevoProducto = {
+                id: Date.now().toString(),
+                codigo,
+                nombre,
+                precio,
+                stock
+            };
+            inventario.push(nuevoProducto);
+        }
 
-        inventario.push(nuevoProducto);
         localStorage.setItem('pos_inventario', JSON.stringify(inventario));
         renderizarInventario();
         cerrarModalProducto();
         e.target.reset();
-        alert('¡Producto agregado al inventario con éxito!');
+        alert('¡Operación realizada con éxito!');
     });
 }
 
@@ -100,13 +114,31 @@ function cambiarPestaña(tab) {
     detenerEscaner();
 }
 
-// --- MODAL DE NUEVO PRODUCTO ---
+// --- MODAL DE NUEVO / EDITAR PRODUCTO ---
 window.abrirModalProducto = function() {
+    idProductoEditando = null;
+    document.getElementById('titulo-modal-producto').textContent = "Registrar Nuevo Producto";
+    document.getElementById('form-nuevo-producto').reset();
     document.getElementById('modal-producto').classList.remove('hidden');
 }
 
 window.cerrarModalProducto = function() {
+    idProductoEditando = null;
     document.getElementById('modal-producto').classList.add('hidden');
+}
+
+window.editarProducto = function(id) {
+    const prod = inventario.find(p => p.id === id);
+    if (!prod) return;
+
+    idProductoEditando = prod.id;
+    document.getElementById('titulo-modal-producto').textContent = "Modificar Producto";
+    document.getElementById('input-nombre').value = prod.nombre;
+    document.getElementById('input-codigo').value = prod.codigo;
+    document.getElementById('input-precio').value = prod.precio;
+    document.getElementById('input-stock').value = prod.stock;
+
+    document.getElementById('modal-producto').classList.remove('hidden');
 }
 
 // --- ESCÁNER DE CÁMARA ---
@@ -286,7 +318,7 @@ window.agregarAlCarritoPorId = function(id) {
     document.getElementById('sugerencias-busqueda').innerHTML = '';
 };
 
-// --- INVENTARIO ---
+// --- INVENTARIO Y MODIFICACIÓN ---
 function renderizarInventario() {
     const contenedor = document.getElementById('tabla-inventario');
     if (!contenedor) return;
@@ -304,7 +336,10 @@ function renderizarInventario() {
                         <span class="font-bold text-slate-900">$${p.precio.toFixed(2)}</span>
                         <p class="text-xs text-slate-400">Stock: ${p.stock}</p>
                     </div>
-                    <button onclick="eliminarProducto('${p.id}')" class="text-red-400 hover:text-red-600 text-xs px-2 py-1 border border-red-200 rounded">Eliminar</button>
+                    <div class="flex gap-1">
+                        <button onclick="editarProducto('${p.id}')" class="bg-amber-500 hover:bg-amber-600 text-white text-xs px-2.5 py-1.5 rounded transition shadow-sm">Editar</button>
+                        <button onclick="eliminarProducto('${p.id}')" class="bg-red-500 hover:bg-red-600 text-white text-xs px-2.5 py-1.5 rounded transition shadow-sm">Eliminar</button>
+                    </div>
                 </div>
             </div>
         `;
