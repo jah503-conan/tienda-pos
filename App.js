@@ -300,3 +300,39 @@ window.eliminarProducto = function(id) {
         renderizarInventario();
     }
 }
+// --- COPIA DE SEGURIDAD (EXPORTAR E IMPORTAR) ---
+
+// Descargar archivo JSON con el inventario actual
+window.exportarInventario = function() {
+    const datosStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(inventario, null, 2));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", datosStr);
+    downloadAnchor.setAttribute("download", `inventario_arte_e_impresiones_${new Date().toISOString().slice(0,10)}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+}
+
+// Cargar inventario desde el archivo JSON guardado
+window.importarInventario = function(event) {
+    const archivo = event.target.files[0];
+    if (!archivo) return;
+
+    const lector = new FileReader();
+    lector.onload = function(e) {
+        try {
+            const datosImportados = JSON.parse(e.target.result);
+            if (Array.isArray(datosImportados)) {
+                inventario = datosImportados;
+                localStorage.setItem('pos_inventario', JSON.stringify(inventario));
+                renderizarInventario();
+                alert('¡Inventario restaurado con éxito desde la copia de seguridad!');
+            } else {
+                alert('El archivo no tiene un formato válido.');
+            }
+        } catch (err) {
+            alert('Error al leer el archivo JSON.');
+        }
+    };
+    lector.readAsText(archivo);
+}
